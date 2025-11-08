@@ -243,21 +243,21 @@ class MusicPlayer:
         progress_frame = tk.Frame(song_frame, bg="#16213e")
         progress_frame.pack(pady=10, padx=20, fill=tk.X)
         
-        self.progress_var = tk.DoubleVar()
-        self.progress_bar = tk.Scale(
+        # Simple progress indicator (no slider to avoid UI jumps)
+        self.progress_canvas = tk.Canvas(
             progress_frame,
-            from_=0,
-            to=100,
-            orient=tk.HORIZONTAL,
-            variable=self.progress_var,
-            state=tk.DISABLED,  # Disable seeking to prevent audio issues
-            bg="#16213e",
-            fg="#f1f1f1",
-            troughcolor="#0f3460",
-            highlightthickness=0,
-            showvalue=0
+            height=6,
+            bg="#0f3460",
+            highlightthickness=0
         )
-        self.progress_bar.pack(fill=tk.X)
+        self.progress_canvas.pack(fill=tk.X)
+        
+        # Create progress bar rectangle
+        self.progress_rect = self.progress_canvas.create_rectangle(
+            0, 0, 0, 6,
+            fill="#e94560",
+            outline=""
+        )
         
         time_frame = tk.Frame(song_frame, bg="#16213e")
         time_frame.pack(fill=tk.X, padx=20)
@@ -436,13 +436,29 @@ class MusicPlayer:
     def play_song(self, song):
         if song:
             try:
+                # Stop current music before loading new
+                pygame.mixer.music.stop()
+                pygame.mixer.music.unload()
+                
+                # Load and play new song
                 pygame.mixer.music.load(song.file_path)
                 pygame.mixer.music.play()
+                
                 self.is_playing = True
                 self.is_paused = False
                 self.current_song = song
                 self.recently_played.push({'name': song.name, 'path': song.file_path})
                 self.update_display()
+                self.play_pause_btn.config(text="⏸️ Pause")
+                
+                # Get and display song length once
+                try:
+                    song_length = pygame.mixer.Sound(song.file_path).get_length()
+                    self.total_time_label.config(text=self.format_time(song_length))
+                    self.current_time_label.config(text="0:00")
+                except:
+                    self.total_time_label.config(text="--:--")
+                
             except Exception as e:
                 messagebox.showerror("Error", f"Could not play song: {str(e)}")
     
@@ -465,6 +481,9 @@ class MusicPlayer:
             self.play_pause_btn.config(text="⏸️ Pause")
     
     def play_next(self):
+        if self.playlist.size == 0:
+            return
+            
         if self.is_shuffle:
             song = self.playlist.get_random_song()
         else:
@@ -472,20 +491,25 @@ class MusicPlayer:
         
         if song:
             self.play_song(song)
-            self.play_pause_btn.config(text="⏸️ Pause")
     
     def play_previous(self):
+        if self.playlist.size == 0:
+            return
+            
         song = self.playlist.previous_song()
         if song:
             self.play_song(song)
-            self.play_pause_btn.config(text="⏸️ Pause")
     
     def stop(self):
         pygame.mixer.music.stop()
+        pygame.mixer.music.unload()
         self.is_playing = False
         self.is_paused = False
         self.play_pause_btn.config(text="▶️ Play")
-        self.progress_var.set(0)
+        self.current_time_label.config(text="0:00")
+        self.total_time_label.config(text="0:00")
+        # Reset progress bar
+        self.progress_canvas.coords(self.progress_rect, 0, 0, 0, 6)
     
     def toggle_shuffle(self):
         self.is_shuffle = not self.is_shuffle
@@ -497,8 +521,7 @@ class MusicPlayer:
             self.mode_label.config(text="📜 Sequential Mode")
     
     def seek(self, value):
-        # Disable seeking to prevent audio breaking
-        # Seeking in pygame.mixer.music can cause issues
+        # Seeking disabled - progress bar is visual only
         pass
     
     def update_progress(self):
@@ -507,26 +530,21 @@ class MusicPlayer:
                 # Check if music is still playing
                 if not pygame.mixer.music.get_busy():
                     # Song ended, play next
-                    self.root.after(100, self.play_next)
+                    if self.is_playing:
+                        self.play_next()
                 else:
-                    # Update progress (visual only, no seeking)
-                    if self.current_song and os.path.exists(self.current_song.file_path):
+                    # Minimal update - only time label, no canvas operations
+                    if self.current_song:
                         try:
-                            song_length = pygame.mixer.Sound(self.current_song.file_path).get_length()
                             current_pos = pygame.mixer.music.get_pos() / 1000
-                            
-                            if song_length > 0 and current_pos >= 0:
-                                progress = min((current_pos / song_length) * 100, 100)
-                                self.progress_var.set(progress)
-                                
+                            if current_pos >= 0:
                                 self.current_time_label.config(text=self.format_time(current_pos))
-                                self.total_time_label.config(text=self.format_time(song_length))
-                        except Exception as e:
-                            # If we can't get length, just show basic info
+                        except:
                             pass
-            except Exception as e:
+            except:
                 pass
         
+        # Update every 1000ms to reduce overhead
         self.root.after(1000, self.update_progress)
     
     def format_time(self, seconds):
