@@ -5,7 +5,7 @@ import os
 import random
 from pathlib import Path
 
-# Node class for Doubly Circular Linked List
+# Node class for CDLL
 class SongNode:
     def __init__(self, name, file_path):
         self.name = name
@@ -13,8 +13,8 @@ class SongNode:
         self.prev = None
         self.next = None
 
-# Doubly Circular Linked List for Playlist
-class DoublyCircularLinkedList:
+# CDLL for Playlist
+class CircularDoublyLinkedList:
     def __init__(self):
         self.head = None
         self.current = None
@@ -160,7 +160,7 @@ class MusicPlayer:
         pygame.mixer.init()
         
         # Data structures
-        self.playlist = DoublyCircularLinkedList()
+        self.playlist = CircularDoublyLinkedList()
         self.recently_played = Stack(10)
         
         # State variables
@@ -182,7 +182,7 @@ class MusicPlayer:
         
         title_label = tk.Label(
             title_frame,
-            text="🎵 Music Player",
+            text="🎵 player++",
             font=("Arial", 28, "bold"),
             bg="#1a1a2e",
             fg="#e94560"
@@ -191,7 +191,7 @@ class MusicPlayer:
         
         subtitle = tk.Label(
             title_frame,
-            text="Using Doubly Circular Linked List & Stack",
+            text="The Ultimate Music Player",
             font=("Arial", 10),
             bg="#1a1a2e",
             fg="#a0a0a0"
@@ -377,7 +377,7 @@ class MusicPlayer:
         info_label.pack(anchor=tk.W, padx=10, pady=5)
         
         info_text = """
-• Doubly Circular Linked List - Playlist management with bidirectional traversal
+• Circular Doubly Linked List - Playlist management with bidirectional traversal
 • Stack (LIFO) - Recently played songs tracking (max 10)
 • Randomization - Shuffle mode with random song selection
         """
@@ -408,7 +408,7 @@ class MusicPlayer:
             return
         
         # Clear existing playlist
-        self.playlist = DoublyCircularLinkedList()
+        self.playlist = CircularDoublyLinkedList()
         self.stop()
         
         # Load all MP3 files
