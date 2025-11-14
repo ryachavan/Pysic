@@ -182,7 +182,7 @@ class MusicPlayer:
         
         title_label = tk.Label(
             title_frame,
-            text="🎵 player++",
+            text="🎵 Pysic",
             font=("Arial", 28, "bold"),
             bg="#1a1a2e",
             fg="#e94560"
@@ -679,3 +679,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
